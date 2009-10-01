@@ -7,7 +7,7 @@
  - Requires tagsoup and other non-prelude libraries (see the list of imports).
  -
  - Ported from the Python code located at yonder blog:
- -   http://gimbo.org.uk/blog/2009/09/23/
+ -   <http://gimbo.org.uk/blog/2009/09/23/>
  -}
 
 import List
