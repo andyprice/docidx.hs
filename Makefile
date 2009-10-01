@@ -8,6 +8,8 @@ GHCI		=	ghci $(INCLUDES)
 
 RUNGHC		=	runghc $(INCLUDES)
 
+all:			clean configure build haddock sdist
+
 clean:
 			@runghc Setup clean && \
 			  find . -name '*~' -exec rm -vf {} ';' && \
@@ -35,4 +37,4 @@ sdist:
 view:			haddock
 			open dist/doc/html/docidx/docidx/index.html
 
-all:			clean configure build haddock sdist
+.PHONY: all clean configure build haddock sdist view lint nuke
