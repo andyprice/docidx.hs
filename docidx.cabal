@@ -1,0 +1,23 @@
+Name:                   docidx
+Version:                0.1.0
+Stability:              Alpha
+Synopsis:               A HTML index generator for installed package documentation.
+Description:
+    A HTML index generator for installed package documentation.
+
+    Based on: http://gimbo.org.uk/blog/2009/09/23/generating-an-index-of-haskell-haddock-docs-automatically/
+
+Category:               Utils
+License:                BSD3
+License-file:           LICENSE
+Copyright:              Andy Price <andy@andrewprice.me.uk>, Andy Gimblett <haskell@gimbo.org.uk>
+Author:                 Andy Price <andy@andrewprice.me.uk>, Andy Gimblett <haskell@gimbo.org.uk>
+Maintainer:             Andy Price <andy@andrewprice.me.uk>, Andy Gimblett <haskell@gimbo.org.uk>
+Build-Type:             Simple
+Cabal-Version:          >=1.6
+
+Executable docidx
+  hs-source-dirs:       src
+  Main-is:              docidx.hs
+  Build-Depends:        base >= 3 && < 5, containers, filepath, haskell98, html, tagsoup
+  ghc-options:          -fwarn-tabs -Wall
