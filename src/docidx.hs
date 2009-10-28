@@ -26,12 +26,13 @@ import Text.Html
  - The index is written to 'index.html' at this path.
  -}
 
-docPath = "/usr/share/doc" :: FilePath
+docPath :: FilePath
+docPath = "/usr/share/doc"
 
 data Package = Package { key :: Char
                        , pname :: String
                        , ptitle :: String
-                       , path :: FilePath }
+                       , pkgPath :: FilePath }
 
 -- Generates the full path of a HTML doc index file
 htmlPath :: FilePath -> FilePath
@@ -52,7 +53,7 @@ packageTitle lib = do
 
 -- Creates a package object
 createPackage :: FilePath -> String -> Package
-createPackage lib title = Package (toUpper (head lib)) lib title (htmlPath lib)
+createPackage lib t = Package (toUpper (head lib)) lib t (htmlPath lib)
 
 -- Creates a doc package and categorises it based on whether it has a HTML
 -- index in the doc directory. If it has one, it is keyed by its initial
@@ -60,8 +61,8 @@ createPackage lib title = Package (toUpper (head lib)) lib title (htmlPath lib)
 categorise :: FilePath -> IO Package
 categorise lib = do
     x <- doesFileExist $ joinPath [docPath, (htmlPath lib)]
-    if x then do title <- packageTitle lib
-                 return (createPackage lib title)
+    if x then do t <- packageTitle lib
+                 return (createPackage lib t)
          else return (Package '\0' lib "" (joinPath [docPath, lib]))
 
 -- Finds all the doc packages inside a directory
@@ -73,7 +74,7 @@ libs path = do
 -- Returns a function which generates a list of initial-letter keys for a list
 -- of packages
 keys :: [Package] -> [Char]
-keys = Set.toAscList . foldl (\u p->Set.insert (key p) u) Set.empty
+keys = Set.toAscList . foldl (\u pkg -> Set.insert (key pkg) u) Set.empty
 
 -- Creates the HTML code for this list of packages
 htmlPage :: [Package] -> [Html]
@@ -96,37 +97,37 @@ htmlBody pkgs =
 
 -- Generates the table of contents for the index
 htmlTOC :: [Package] -> [Html]
-htmlTOC pkgs = intersperse bullet anchors
+htmlTOC pkgs = intersperse (primHtml " &bull; ") anchors
     where anchors = [ anchor ![ href ('#':[k]) ] << [k] |
                             k <- tail $ keys pkgs ]
-          bullet = primHtml " &bull; "
 
 -- Generates the initial-letter-grouped sections of the index
 letterListings :: [Package] -> [Char] -> [Html]
 letterListings _    []       = [noHtml]
 letterListings pkgs ['\0']   =
     [ h2 << "Directories without HTML docs"
-    , ulist << (map packageItem $ filter (('\0'==) . key) pkgs)
+    , ulist << map packageItem (filter (('\0'==) . key) pkgs)
     ]
-letterListings pkgs (k:keys) =
+letterListings pkgs (k:ks) =
     [ h3 ![theclass "category"] <<  anchor ![name [k]] << [k]
     , ulist ![theclass "packages"]
-        << (map packageItem $ filter ((k==) . key) pkgs)
-    ] ++ letterListings pkgs keys
+        << map packageItem (filter ((k==) . key) pkgs)
+    ] ++ letterListings pkgs ks
 
 -- Generates a link to a package's index.html (if it exists) as a <li>
 -- Here the key '\0' is used for the packages with no HTML index
 -- so we just link to their directories.
 packageItem :: Package -> Html
 packageItem pkg =
-    li << [ anchor ![href $ "file://" ++ path pkg]
+    li << [ anchor ![href $ "file://" ++ pkgPath pkg]
                 << stringToHtml (pname pkg),
-            stringToHtml (mktitle pkg)]
-    where mktitle p = if ptitle p == "" then ""
-                            else ": " ++ ptitle p
+            stringToHtml t']
+    where t' = if t == "" then "" else ": " ++ t
+          t = ptitle pkg
+          
 
 main :: IO ()
 main = do
-    p <- libs docPath
-    writeFile outFile $ show $ htmlPage p
+    ps <- libs docPath
+    writeFile outFile $ show $ htmlPage ps
     where outFile = joinPath [docPath, "index.html"]
