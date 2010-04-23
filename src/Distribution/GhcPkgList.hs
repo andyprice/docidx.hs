@@ -10,7 +10,8 @@
 module Distribution.GhcPkgList (
   PkgDb(..),
   PkgInfo(..),
-  listPackages
+  listPackages,
+  readPkgName
 ) where
 
 import Control.Monad (when)
@@ -32,7 +33,13 @@ data PkgInfo = PkgInfo {
     pkgName :: String,
     pkgVersion :: [Int],
     pkgHidden :: Bool
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord)
+
+instance Show PkgInfo where
+  show (PkgInfo n v h) = if h then "(" ++ np ++ ")" else np
+    where np = n ++ "-" ++ (intercalate "." $ map show v)
+
+-- nb: Haven't bothered with a Read instance yet.
 
 -- | Return a list of package database information as reported by
 -- calling "ghc-pkg list".
@@ -43,7 +50,17 @@ listPackages = do
     Left err -> error $ show err
     Right x -> return x
 
+-- | Given a package name string, turn it into a name and version.
+readPkgName :: String -> Maybe (String, [Int])
+readPkgName s = case ds of
+                  Just ds' -> Just (n, ds')
+                  Nothing -> Nothing
+  where n = intercalate "-" $ init parts
+        ds :: Maybe [Int]
+        ds = sequence $ map readInt $ split "." $ last parts
+        parts = split "-" s
 
+        
 
 -- Helpers from here on.
 
@@ -74,6 +91,13 @@ pkgInfo = do
   h <- option False (char '(' >> (return True))
   ps <- (many $ choice [letter, digit, char '.']) `sepBy1` (char '-')
   when h $ char ')' >> (return ())
-  let n = intercalate "-" $ init ps
-      ds = map read $ split "." $ last ps
-  return $ PkgInfo n ds h
+  let pn = readPkgName $ intercalate "-" ps
+  case pn of
+    Just (n, ds) -> return $ PkgInfo n ds h
+    Nothing -> error $ "Can't read package version: " ++ intercalate "-" ps
+
+-- | Safe read of integer string
+readInt :: String -> Maybe Int
+readInt s = case (reads s) :: [(Int, String)] of
+              [(x, "")] -> Just x
+              _ -> Nothing
